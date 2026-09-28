@@ -120,7 +120,7 @@ OR 1=1
 -- AND released = 1
 ```
 
-## 6. Vulnerability Impact
+## 5. Vulnerability Impact
 
 SQL Injection can allow an attacker to manipulate database queries.
 
@@ -137,7 +137,7 @@ The actual impact depends on the database permissions and the vulnerable SQL que
 
 ---
 
-## 7. Remediation
+## 6. Remediation
 
 The primary remediation is to use **parameterized queries / prepared statements**.
 
