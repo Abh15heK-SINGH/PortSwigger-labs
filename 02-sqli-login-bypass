@@ -1,0 +1,177 @@
+# SQL Injection Vulnerability Allowing Login Bypass
+
+## Lab Information
+
+| Field               | Details                          |
+| ------------------- | -------------------------------- |
+| **Platform**        | PortSwigger Web Security Academy |
+| **Lab Level**       | Apprentice                       |
+| **Vulnerability**   | SQL Injection                    |
+| **Injection Point** | Login function                   |
+| **Attack Type**     | Authentication bypass            |
+---
+
+## 1. Objective
+
+The application contains a SQL injection vulnerability in its login functionality.
+
+The objective is to manipulate the SQL query used during authentication and log in to the application as the `administrator` user without knowing the administrator's password.
+
+---
+
+## 2. Understanding the Application
+
+The login function accepts a username and password.
+
+A typical authentication query may look conceptually like:
+
+```sql
+SELECT * FROM users
+WHERE username = 'administrator'
+AND password = 'password'
+```
+
+The application should only authenticate the user when both the username and password conditions are satisfied.
+
+If user input is directly incorporated into the SQL query, an attacker may be able to modify the query's logic.
+
+---
+
+## 3. Testing Methodology
+
+### Step 1 — Establish a Baseline
+
+I first accessed the application's login page and attempted a normal login.
+
+### Screenshot
+
+![Login Page](./screenshots/01-login-page.png)
+
+The purpose of this step was to understand the normal authentication behavior before testing for SQL Injection.
+
+---
+
+### Step 2 — Identify the Injection Point
+
+The login request contains user-controlled parameters, including:
+
+```text
+username
+password
+```
+
+I tested the username parameter for SQL Injection because it is incorporated into the authentication query.
+
+---
+
+### Step 3 — Test SQL Injection
+
+The username parameter was modified using SQL syntax designed to alter the authentication query.
+
+Payload:
+
+```sql
+administrator'--
+```
+
+### Screenshot
+
+![SQL Injection Payload](./screenshots/02-sqli-payload.png)
+
+The single quote terminates the original username string.
+
+The `--` sequence starts a SQL comment, causing the remaining portion of the query to be ignored.
+
+---
+
+## 4. Payload Analysis
+
+The original authentication query can be represented conceptually as:
+
+```sql
+SELECT * FROM users
+WHERE username = 'administrator'
+AND password = 'password'
+```
+
+After injecting:
+
+```text
+administrator'--
+```
+
+the query becomes approximately:
+
+```sql
+SELECT * FROM users
+WHERE username = 'administrator'
+-- AND password = 'password'
+```
+
+The password condition is commented out.
+
+The database therefore evaluates the username condition without evaluating the original password condition.
+
+---
+
+## 5. Result
+
+The application authenticated me as the `administrator` user without requiring the legitimate administrator password.
+
+This confirmed that the login functionality is vulnerable to SQL Injection and that the vulnerability can be used to bypass authentication.
+
+### Screenshot
+
+![Successful Administrator Login](./screenshots/03-successful-login.png)
+
+---
+
+## 6. Vulnerability Impact
+
+SQL Injection in an authentication query can have a significant security impact.
+
+Depending on the application and database configuration, an attacker may be able to:
+
+* Bypass authentication
+* Access another user's account
+* Access administrator functionality
+* Retrieve sensitive information
+* Potentially modify application data
+* Perform further attacks against the database
+
+In this lab, the demonstrated impact is **authentication bypass and unauthorized administrator access**.
+
+---
+
+## 7. Remediation
+
+The primary remediation is to use **parameterized queries / prepared statements**.
+
+Instead of dynamically constructing the authentication query:
+
+```sql
+SELECT * FROM users
+WHERE username = 'USER_INPUT'
+AND password = 'PASSWORD_INPUT'
+```
+
+the application should use parameters:
+
+```sql
+SELECT * FROM users
+WHERE username = ?
+AND password = ?
+```
+
+The username and password should be supplied separately as parameters rather than concatenated into the SQL statement.
+
+Additional security measures include:
+
+* Use parameterized queries throughout the application.
+* Apply least-privilege permissions to database accounts.
+* Implement secure password hashing rather than storing plaintext passwords.
+* Avoid exposing detailed database errors.
+* Implement appropriate authentication and session controls.
+* Perform regular security testing for injection vulnerabilities.
+
+---
